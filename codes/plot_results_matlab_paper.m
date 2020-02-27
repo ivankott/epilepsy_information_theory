@@ -1,16 +1,16 @@
 clc
-clear all
 close all
+clear variables
 addpath(pwd)
-addpath('G:\Works\Ivan\MATLAB CSPVARICA and MVARICA\Functions_MVAR');
-addpath('G:\Works\Ivan\MATLAB CSPVARICA and MVARICA\Functions.2');
-addpath('G:\Works\Ivan\MATLAB CSPVARICA and MVARICA\NotBoxPlot');
+addpath('/Users/ivan_kotiuchyi/Documents/PyCharmProjects/epilepsy_information_theory/Functions_MVAR');
+addpath('/Users/ivan_kotiuchyi/Documents/PyCharmProjects/epilepsy_information_theory/functions_');
+addpath('/Users/ivan_kotiuchyi/Documents/PyCharmProjects/epilepsy_information_theory/notBoxPlot/code');
 
-load('mvar_source_results_MATLAB_paper_base_pre.mat')
+load('./results/mvar_source_results_MATLAB_paper_base_pre.mat')
 base_pre = results_data;
-load('mvar_source_results_MATLAB_paper_base_post.mat')
+load('./results/mvar_source_results_MATLAB_paper_base_post.mat')
 base_post = results_data;
-load('mvar_source_results_MATLAB_paper_pre_post.mat')
+load('./results/mvar_source_results_MATLAB_paper_pre_post.mat')
 pre_post = results_data;
 
 %load('mvar_source_results_MATLAB_paper.mat')
