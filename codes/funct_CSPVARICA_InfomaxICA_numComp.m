@@ -1,0 +1,190 @@
+function [unmixing_matrix] = funct_CSPVARICA_InfomaxICA_numComp(x1, x2, NumComponents, p, idMode)
+
+    %%% inputs:
+    % * x1: EEG signals - condition 1 (n_channels x n_samples x n_trials)
+    % * x2: EEG signals - condition 2 (n_channels x n_samples x n_trials) 
+    % * numComp= number of components
+    % * p: MVAR model order
+    % * idMode: identification mode of MVAR toolbox
+    
+    %%% outputs:
+    % * s_stim1: source estimation - condition1
+    % * s_stim2: source estimation - condition2
+    % * U1: unmixing matrix - condition 1
+    % * U2: unmixing matrix - condition 2
+    % * CM1: inverted combined matrix - condition 1;
+    % * CM2: inverted combined matrix - condition 2;
+    % * W: CSP transformation matrix (C)
+    
+    % CSP implementation
+    % permute
+    xn1 = permute(x1, [3 1 2]);
+    xn2 = permute(x2, [3 1 2]);
+    
+    [t1, m1, n1] = size(xn1);
+    sigma1 = zeros([m1,m1]);
+    
+    % obtain mean cov matrices for each trial in each class
+    for n_trial=1:t1
+        sigma1 = sigma1 + cov(permute(xn1(n_trial, :, :), [3 2 1]))/t1;
+    end
+    sigma1 = sigma1 / trace(sigma1);
+
+    [t2, m2, n2] = size(xn2);
+    sigma2 = zeros([m2,m2]);
+    
+    for n_trial=1:t2
+        sigma2 = sigma2 + cov(permute(xn2(n_trial, :, :), [3 2 1]))/t2;
+    end
+    sigma2 = sigma2 / trace(sigma2);
+
+    % Solve the eigenvalue problem S1�W = l�S2�W
+    % W: mixing matrix (eigenvectors)
+    % A: demixing matrix (inverse of W)
+    % L: eigenvalues
+    
+    % I think we should explain in the paper, why we use sum below, 
+    % in case we are going to define and understand everything
+    [W, L] = eig(sigma1, sigma1 + sigma2, 'vector');
+    [eigval_sorted, eigval_indices] = sort(L, 'ascend'); 
+
+    for w=1:size(W,2)
+        W(:,w)=W(:,w)./norm(W(:,w));
+    end 
+
+    %reorder in descendent order
+    W = W(:,eigval_indices);
+    % ? need to check it out and comment ?
+    W = W.*-1;
+    A = (inv(W))';  
+    
+    while (size(W,2) > NumComponents)
+        i_tmp_rmv = floor(size(W,2)/2);
+        W(:,i_tmp_rmv) = [];
+        A(i_tmp_rmv,:) = [];
+    end
+
+    %% 27/01/2020
+    xn1 = permute(x1, [3 1 2]);
+    xn2 = permute(x2, [3 1 2]);
+    
+    % obtain CSP source activations
+    for n_trial=1:t1
+        yn1(n_trial,:,:) = W'*permute(xn1(n_trial, :, :), [2 3 1]);
+    end
+    
+    for n_trial=1:t2
+        yn2(n_trial,:,:) = W'*permute(xn2(n_trial, :, :), [2 3 1]);
+    end
+    %%
+    %yn1 = W'*x1;
+    %yn2 = W'*x2;
+    
+    % ???
+    %yn(1,:,:) = yn1;
+    %yn(2,:,:) = yn2;
+
+    % LF MVAR toolbox
+    %%% input:
+    % Y, M*N matrix of time series (each time series is in a row)
+    % p, model order
+    % Mode, determines estimation algorithm 
+    % (0:builtin least squares)
+
+    %%% output:
+    % Am=[A(1)...A(p)], M*pM matrix of the estimated MVAR model coefficients
+    % S, estimated M*M input covariance matrix
+    % Yp, estimated time series
+    % Up, estimated residuals
+
+    % syntax => [Am, S, Yp, Up] = idMVAR(Y, p, Mode);
+    
+    %% 28/01/2020
+    % Fit MVAR model to each trial
+    yn1_residuals = [];
+    for n_trial=1:t1
+        [~, ~, ~, Up] = idMVAR(permute(yn1(n_trial, :, :), [2 3 1]), p, idMode);
+        Up_rmbase = rmbase(Up);
+        yn1_residuals = cat(2, yn1_residuals, Up_rmbase);
+        clear Up Up_rmbase
+    end
+    
+    yn2_residuals = [];
+    for n_trial=1:t2
+        [~, ~, ~, Up] = idMVAR(permute(yn2(n_trial, :, :), [2 3 1]), p, idMode);
+        Up_rmbase = rmbase(Up);
+        yn2_residuals = cat(2, yn2_residuals, Up_rmbase);
+        clear Up Up_rmbase
+    end
+    %% Riccardo's codes
+    
+    % [~, ~, ~, Up1] = idMVAR(yn1, p, idMode);
+    % [~, ~, ~, Up2] = idMVAR(yn2, p, idMode);
+    
+    % apply InfoMAX ICA algorithm to residuals
+    % syntax simple [weights,sphere] = runica(data); 
+    % outputs:
+    % * weights = ICA weight matrix (comps,chans)      
+    % * sphere = data sphering matrix (chans,chans) = spher(data)
+    % Note that unmixing_matrix = weights*sphere {if sphering off -> eye(chans)}
+            
+%     [W1, ~] = runica(yn1_residuals);
+%     [W2, ~] = runica(yn2_residuals);
+%     
+%     CM1 = inv(W1);
+%     CM2 = inv(W2);
+%     
+%     %unmixing matrix
+%     U1 = CM1 * W';
+%     %s_stim1 = U1 * x1;
+% 
+%     U2 = CM2 * W';
+%     %s_stim2 = U2 * x2;
+    
+    % I don't get it why we obtain 2 Unmixing matrices here, since we used
+    % only 1 in SCoT
+    
+    %% IMPLEMENTATION AS IN RUNICA
+    % runica() - Perform Independent Component Analysis (ICA) decomposition
+    % of psychophysiological data using the infomax ICA algorithm of Bell & Sejnowski (1995)
+    
+    % https://sccn.ucsd.edu/~jung/tutorial/runica.htm 
+    % http://www.mat.ucm.es/~vmakarov/Supplementary/wICAexample/TestExample.html
+    % https://sccn.ucsd.edu/wiki/Chapter_09:_Decomposing_Data_Using_ICA
+    % https://github.com/mne-tools/mne-python/blob/16d5538d76bf08278aa95b8546e45f4a5c19d42b/mne/preprocessing/ica.py
+    % https://github.com/mne-tools/mne-python/blob/16d5538d76bf08278aa95b8546e45f4a5c19d42b/mne/preprocessing/infomax_.py
+    
+    % In general, it is important to give ICA as much data as possible for successful training. 
+    % Can you use too much data? This would only occur when data from radically different EEG states,
+    % from different electrode placements, or containing non-stereotypic noise were concatenated, 
+    % increasing the number of scalp maps associated with independent time courses and forcing ICA 
+    % to mixture together dissimilar activations into the N output components. The bottom line is: 
+    % ICA works best when given a large amount of basically similar and mostly clean data.
+    
+    y_residuals = cat(2, yn1_residuals, yn2_residuals);
+    
+    %   Note that if data consists of multiple discontinuous epochs, each epoch should be separately baseline-zero'd using
+    %   >> data = rmbase(data,frames,basevector) - subtract basevector channel means from multi-epoch data matrix;
+    %%% What should be done with the residuals of MVAR model ???
+
+    [Weights_total, Sphere_total] = runica(y_residuals);
+    % unmixing_ica = Weights_total * Sphere_total;   
+    % CM_total = inv(Weights_total);
+    % unmixing_matrix = CM_total * W';
+   
+   
+    unmixing_ica = Weights_total * Sphere_total;   
+    CM_total = inv(Weights_total);
+    unmixing_matrix = CM_total * W';
+    
+    % Suggested Action 
+    % Instead of multiplying by the inverse, use matrix right division (/) or matrix left division (\). That is:
+    % Replace inv(A)*b with A\b
+    % IVAN % unmixing_matrix = Weights_total \ W';
+    
+    %%
+    % VISUALIZATION ???
+    % https://github.com/sccn/eeglab/blob/develop/functions/sigprocfunc/topoplot.m
+    % plot a topographic map of a scalp data field in a 2-D circular view
+    
+end
