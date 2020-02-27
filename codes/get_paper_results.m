@@ -251,7 +251,7 @@ for subj_name_ind = 1:numel(names) %9
                 end
 
                 if ~isreal(Sj) || ~isreal(Tj) || ~isreal(Tij_k)
-                    disp('ALLO, some shit is still complex even after decreasing MVAR order to 5.')
+                    disp('Something is still complex even after decreasing MVAR order to 5.')
                 end
 
                 results_base(seiz_ind).Sj = Sj;
@@ -430,7 +430,7 @@ for subj_name_ind = 1:numel(names) %9
                 end
 
                 if ~isreal(Sj) || ~isreal(Tj) || ~isreal(Tij_k)
-                    disp('ALLO, some shit is still complex even after decreasing MVAR order to 5.')
+                    disp('Something is still complex even after decreasing MVAR order to 5.')
                 end
                 
                 results_pre(seiz_ind).Sj = Sj;
@@ -609,7 +609,7 @@ for subj_name_ind = 1:numel(names) %9
                 end
 
                 if ~isreal(Sj) || ~isreal(Tj) || ~isreal(Tij_k)
-                    disp('ALLO, some shit is still complex even after decreasing MVAR order to 5.')
+                    disp('Something is still complex even after decreasing MVAR order to 5.')
                 end
 
                 results_post(seiz_ind).Sj = Sj;
@@ -788,7 +788,7 @@ for subj_name_ind = 1:numel(names) %9
                 end
 
                 if ~isreal(Sj) || ~isreal(Tj) || ~isreal(Tij_k)
-                    disp('ALLO, some shit is still complex even after decreasing MVAR order to 5.')
+                    disp('Something is still complex even after decreasing MVAR order to 5.')
                 end
 
                 results_base(seiz_ind).Sj = Sj;
@@ -966,7 +966,7 @@ for subj_name_ind = 1:numel(names) %9
                 end
 
                 if ~isreal(Sj) || ~isreal(Tj) || ~isreal(Tij_k)
-                    disp('ALLO, some shit is still complex even after decreasing MVAR order to 5.')
+                    disp('Something is still complex even after decreasing MVAR order to 5.')
                 end
 
                 results_post(seiz_ind).Sj = Sj;
@@ -1146,7 +1146,7 @@ for subj_name_ind = 1:numel(names) %9
                 end
 
                 if ~isreal(Sj) || ~isreal(Tj) || ~isreal(Tij_k)
-                    disp('ALLO, some shit is still complex even after decreasing MVAR order to 5.')
+                    disp('Something is still complex even after decreasing MVAR order to 5.')
                 end
                 
                 results_pre(seiz_ind).Sj = Sj;
